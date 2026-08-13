@@ -246,3 +246,88 @@ flowchart TD
 - **DR runbook** exists: backup/restore + Kafka replay verified.
 - Grafana has **alerting**; reconciliation and data-quality events are persisted
   and surfaced.
+
+---
+
+## 8. Cloud deployment recommendation
+
+Deployment decision for taking this platform to the cloud, grounded in the actual
+stack (Redpanda/Kafka, Redis, TimescaleDB/Postgres, 7 Python/FastAPI services,
+Prometheus/Grafana, WebSockets).
+
+### 8.1 Recommendation (TL;DR)
+
+- **Best overall: AWS + EKS (managed Kubernetes)** with managed data services
+  around it — richest market-data/networking ecosystem, scales from single-node
+  MVP to multi-AZ production.
+- **Close second: GCP + GKE** — excellent managed Kubernetes and preferable if the
+  AI/anomaly-detection roadmap (M8) is weighted heavily.
+- **Compute model:** managed Kubernetes for the long-lived, stateful services;
+  **avoid pure serverless** (Lambda/Cloud Run) for the hot path — WebSockets and
+  Kafka consumer groups are long-lived and stateful, which fights the serverless
+  model. Reserve serverless only for glue (e.g., scheduled reconciliation).
+- **Do not self-host** Kafka/Redis/Postgres on day one — use managed versions and
+  spend effort on the platform, not on operating stateful infra.
+
+### 8.2 Why it fits the requirements
+
+- High-throughput streaming + **stateful consumer groups** → always-on compute with
+  stable identity → Kubernetes Deployments/StatefulSets.
+- Low-latency + **WebSockets** → co-locate producers, brokers, cache, and API in one
+  region/VPC (ideally one AZ for the hot path) to minimize hops and egress cost.
+- **Time-series storage** → managed Postgres with the Timescale extension (or
+  Timescale Cloud).
+- Existing **Docker Compose** → each of the 7 services lifts to a K8s Deployment.
+
+### 8.3 Component → managed service mapping
+
+| Component | AWS (recommended) | GCP | Azure |
+|---|---|---|---|
+| Services (7× Python) | **EKS** | GKE | AKS |
+| Streaming (Redpanda/Kafka) | **Redpanda Cloud on AWS** (or MSK) | Redpanda Cloud / Confluent | Redpanda Cloud / Event Hubs (Kafka API) |
+| Redis cache/pub-sub | **ElastiCache (Redis/Valkey)** | Memorystore | Azure Cache for Redis |
+| TimescaleDB | **Timescale Cloud** (or RDS Postgres + extension) | Timescale Cloud / AlloyDB | Timescale Cloud / Flexible Server |
+| Metrics/dashboards | **Amazon Managed Prometheus + Managed Grafana** | Managed Prometheus + Cloud Monitoring | Azure Monitor + Managed Grafana |
+| Container registry | ECR | Artifact Registry | ACR |
+| Secrets/config | Secrets Manager / SSM | Secret Manager | Key Vault |
+
+### 8.4 Deployment tiers
+
+**Tier 1 — Lean MVP / demo (cheapest path to "it's live"):**
+- Small EKS cluster (or Fargate), Redpanda Cloud starter, single-node ElastiCache,
+  small Timescale Cloud instance, Managed Grafana.
+- Cheapest portfolio option: a **single EC2 VM running the existing
+  `docker-compose.yml`** — fastest, but not HA (fine for a demo, not real
+  distribution).
+
+**Tier 2 — Production / scale (maps to milestones M4–M9):**
+- EKS across **≥2–3 AZs**; services as Deployments; stream processors partitioned
+  per asset class; HPA for horizontal scaling.
+- Multi-AZ Redpanda + Timescale replicas; Redis with replication/failover.
+- ALB/NLB + Ingress with **TLS and long-lived WebSocket support**.
+- CI/CD (GitHub Actions → ECR → EKS), IaC via Terraform, per-client
+  auth/entitlements at the API tier.
+
+### 8.5 Market-data-specific gotchas
+
+- **WebSockets:** use a load balancer/Ingress that supports long-lived connections;
+  scale the WS gateway horizontally with Redis pub/sub as the fan-out bus (already
+  the design).
+- **Latency & egress cost:** co-locate broker + cache + processors + API in one
+  region/AZ; cross-AZ transfer is a real cost driver at tick volumes.
+- **Stateful streaming:** the delayed feed is currently in-memory (see M7) —
+  externalize that state (Redis/DB) before relying on it in a scaled/HA deployment.
+- **Storage growth:** enable TimescaleDB compression + retention + continuous
+  aggregates (M5) before historical data balloons.
+- **Portability:** staying on Kafka-API (Redpanda) + Postgres + Redis keeps the
+  platform portable across all three clouds — a strategic advantage.
+
+### 8.6 Sequencing against this plan
+
+1. Containerize services (**M4**) + CI/CD (**M3**) first.
+2. Stand up managed infra (Redpanda Cloud, ElastiCache/Memorystore, Timescale
+   Cloud, Managed Grafana) and deploy services to EKS/GKE.
+3. Harden with multi-AZ + DR (**M7**), then scale-out + SLOs (**M9**).
+
+**Default pick: AWS + EKS + managed Redpanda/Redis/Timescale**, with GCP + GKE as
+the alternative when the AI roadmap dominates.

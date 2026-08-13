@@ -1,0 +1,99 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Messages Published (Ingestion)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(mds_messages_published_total{service=\"ingestion\"}[1m])) by (topic)",
+          "legendFormat": "{{topic}}"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "title": "Messages Processed (Stream Processor)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(mds_messages_processed_total{service=\"stream_processor\"}[1m])) by (topic)",
+          "legendFormat": "{{topic}}"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "title": "Processing Latency (p95)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(mds_processing_latency_seconds_bucket{service=\"stream_processor\"}[5m])) by (le, topic))",
+          "legendFormat": "{{topic}}"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "title": "Reconciliation Gaps",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "mds_reconciliation_gaps",
+          "legendFormat": "{{symbol}} {{metric}}"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "title": "Data Quality Events",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(mds_data_quality_events_total[5m])) by (event_type, severity)",
+          "legendFormat": "{{event_type}} ({{severity}})"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "title": "Anomalies Detected",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(mds_anomalies_detected_total[5m])) by (symbol)",
+          "legendFormat": "{{symbol}}"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["mds", "market-data"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "MDS Platform Overview",
+  "uid": "mds-overview",
+  "version": 1
+}

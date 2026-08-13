@@ -331,3 +331,50 @@ Prometheus/Grafana, WebSockets).
 
 **Default pick: AWS + EKS + managed Redpanda/Redis/Timescale**, with GCP + GKE as
 the alternative when the AI roadmap dominates.
+
+---
+
+## 9. Milestone checklist
+
+A single scannable list of all milestones. Full detail is in §5, dependencies in
+§6. Update the status boxes as work lands.
+
+Status legend: `[ ]` not started · `[~]` in progress · `[x]` done.
+
+- [ ] **M0 — Green environment (P0):** stack runs on Linux + end-to-end smoke test
+  (tick → TimescaleDB → REST/WebSocket); add `scripts/start_services.sh` and a
+  `tests/` smoke test.
+- [ ] **M1 — Close the product loop (P1):** persist the orphaned streams
+  (`normalized.l2`, `raw.index`, `corporate.actions`, `reference.symbols`,
+  `data.quality`, `delayed.prices`) and add the missing REST endpoints.
+- [ ] **M2 — Real Level 2 & enrichment (P1):** genuine order-book depth
+  ingest → store → serve; corporate-action price adjustment.
+- [ ] **M3 — Quality gates & CI/CD (P2):** unit + integration tests; GitHub Actions
+  running `ruff`, `mypy`, `pytest`; coverage gate; pre-commit.
+- [ ] **M4 — Packaging & operability (P2):** per-service Dockerfiles + compose
+  profiles for one-command run; structured logging; Grafana alert rules.
+- [ ] **M5 — Time-series lifecycle & performance (P2):** compression, retention,
+  continuous aggregates (OHLCV); query/index tuning + benchmarks.
+- [ ] **M6 — Security & multi-tenant delivery (P2/P3):** per-client keys/JWT,
+  per-feed entitlements, rate limiting, TLS, audit logging.
+- [ ] **M7 — Fault tolerance & DR (P3):** durable delayed-feed state; DLQ +
+  offset/retry strategy; backup/restore + Kafka replay; broker replication.
+- [ ] **M8 — AI maturity (P3):** model registry/serving; backtesting harness;
+  additional detectors; feature store; drift monitoring; alert routing.
+- [ ] **M9 — Scale-out & SLOs (P3):** per-asset-class partitioning; multi-instance
+  consumers; load/latency tests; published SLOs + dashboards.
+
+### 9.1 Quick reference
+
+| Milestone | Priority | Depends on | Status |
+|---|---|---|---|
+| M0 — Green environment | P0 | — | Not started |
+| M1 — Close the product loop | P1 | M0 | Not started |
+| M2 — Real Level 2 & enrichment | P1 | M1 | Not started |
+| M3 — Quality gates & CI/CD | P2 | M0 | Not started |
+| M4 — Packaging & operability | P2 | M0 | Not started |
+| M5 — TS lifecycle & performance | P2 | M1 | Not started |
+| M6 — Security & delivery | P2/P3 | M1 | Not started |
+| M7 — Fault tolerance & DR | P3 | M1, M4 | Not started |
+| M8 — AI maturity | P3 | M1, M3 | Not started |
+| M9 — Scale-out & SLOs | P3 | M2, M5 | Not started |

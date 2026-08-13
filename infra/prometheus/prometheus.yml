@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: mds-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+
+  - job_name: mds-ingestion
+    static_configs:
+      - targets: ["host.docker.internal:9101"]
+
+  - job_name: mds-stream-processor
+    static_configs:
+      - targets: ["host.docker.internal:9102"]
+
+  - job_name: mds-reconciliation
+    static_configs:
+      - targets: ["host.docker.internal:9103"]
+
+  - job_name: mds-ai-analytics
+    static_configs:
+      - targets: ["host.docker.internal:9104"]

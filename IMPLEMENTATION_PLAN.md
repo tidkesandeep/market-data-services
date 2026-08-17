@@ -255,6 +255,16 @@ Deployment decision for taking this platform to the cloud, grounded in the actua
 stack (Redpanda/Kafka, Redis, TimescaleDB/Postgres, 7 Python/FastAPI services,
 Prometheus/Grafana, WebSockets).
 
+> **DECISION (LOCKED, 2026-08-17): AWS is the chosen target cloud.**
+> Target architecture: **AWS + EKS (managed Kubernetes)** for the long-lived
+> services, with **managed Redpanda/Kafka, ElastiCache (Redis), Timescale
+> Cloud/RDS Postgres, and Amazon Managed Prometheus + Grafana** around it.
+> The mapping and tiers below are now the committed plan, not just a
+> recommendation. GCP + GKE is retained only as a documented fallback. Databricks
+> was evaluated and rejected as a host for the whole platform (it cannot run the
+> broker, Redis, or the WebSocket gateway); it may still be revisited later purely
+> for the lakehouse/AI portions (M5/M8).
+
 ### 8.1 Recommendation (TL;DR)
 
 - **Best overall: AWS + EKS (managed Kubernetes)** with managed data services
@@ -329,8 +339,8 @@ Prometheus/Grafana, WebSockets).
    Cloud, Managed Grafana) and deploy services to EKS/GKE.
 3. Harden with multi-AZ + DR (**M7**), then scale-out + SLOs (**M9**).
 
-**Default pick: AWS + EKS + managed Redpanda/Redis/Timescale**, with GCP + GKE as
-the alternative when the AI roadmap dominates.
+**Locked decision: AWS + EKS + managed Redpanda/Redis/Timescale** (see the DECISION
+note at the top of §8). GCP + GKE is retained only as a documented fallback.
 
 ---
 
